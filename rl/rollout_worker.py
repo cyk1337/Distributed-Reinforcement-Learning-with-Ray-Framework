@@ -26,8 +26,10 @@
                
 '''
 from typing import List
+import numpy as np
 from abc import ABCMeta, abstractmethod
-from rl.rl import ACTION, TRAJECTORY
+
+from rl.rl import ACTION, OBSERVATION, TRAJECTORY
 from rl import envs
 
 
@@ -43,10 +45,9 @@ class RawRolloutWorkerPool(metaclass=ABCMeta):
         self.s_ = None
         self.GAMMA = args.GAMMA
 
-    def start(self):
-        init_states = [env.reset() for env in self.worker_pool]
-        self.s_ = init_states
-        return init_states
+    @abstractmethod
+    def start(self) -> List[OBSERVATION]:
+        raise NotImplementedError
 
     def get_player(self):
         return self.player
@@ -64,23 +65,35 @@ class DemoRolloutWorkerPool(RawRolloutWorkerPool):
     def __init__(self, env, args):
         super().__init__(env, args)
 
+    def start(self) -> List[OBSERVATION]:
+        init_states = [env.reset() for env in self.worker_pool]
+        self.s_ = [s.observation for s in init_states]
+        return init_states
+
     def run(self, actions, *args, **kwargs) -> List[ACTION]:
         """ Start bat envs"""
+        print('Start rollouts workers ...')
         bat_obs = []
         for i, (env, action) in enumerate(zip(self.worker_pool, actions)):
             ob = env.step(action)
-            # self.trajectory[i].append(
-            #     TRAJECTORY(self.s_[i], ob.reward, ob.done, ob.action, None, None)
-            # )
-            # self.s_[i] = ob.observation
+            self.trajectory[i].append(
+                TRAJECTORY(self.s_[i], ob.reward, ob.done, action.action, None, None)
+            )
+
+            if ob.done or len(self.trajectory[i]) >= self.traj_len:
+                v_s_ = self.player.agent.get_v(ob.observation)
+                discounted_r = []
+                for traj in self.trajectory[i][::-1]:
+                    v_s_ = traj.reward + self.GAMMA * v_s_
+                    discounted_r.append(v_s_)
+                    discounted_r.reverse()
+                self.learner.send_trajectory(self.trajectory[i], np.array(discounted_r)[:, np.newaxis])
+                self.trajectory[i] = []
+
+            if ob.done:
+                ob = env.reset()
+            self.s_[i] = ob.observation
             bat_obs.append(ob)
-            #
-            # if ob.done or len(self.trajectory[i]) > self.traj_len:
-            #     v_s_ = self.player.agent.get_v(ob.observation)
-            #     for traj in self.trajectory[i][::-1]:
-            #         traj.R = traj.reward + self.GAMMA * v_s_
-            #     self.learner.send_trajectory(self.trajectory[i])
-            #     self.trajectory[i] = []
 
         return bat_obs
 

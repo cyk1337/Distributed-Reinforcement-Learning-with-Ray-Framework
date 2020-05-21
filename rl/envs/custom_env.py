@@ -39,7 +39,9 @@ class DemoEnvWrapper(RawEnvWrapper):
 
     def reset(self, *args, **kwargs):
         # custom operation
-        return self.env.reset()
+        ob = self.env.reset()
+        init_ob = OBSERVATION(ob, None, None)
+        return init_ob
 
     def step(self, action, *args, **kwargs):
         action = self._unwrap_action(action)
@@ -53,12 +55,6 @@ class DemoEnvWrapper(RawEnvWrapper):
         ob, reward, done, _ = observation
         observation = OBSERVATION(ob, reward, done)
         return observation
-        # if done:
-        #     new_ob, new_reward, new_done, _ = self.env.reset()
-        #     new_observation = OBSERVATION(new_ob, reward, done)
-        # else:
-        #     new_observation = None
-        # return observation, new_observation
 
     def __repr__(self):
         return 'Demo environment'

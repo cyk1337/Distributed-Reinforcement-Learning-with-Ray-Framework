@@ -43,18 +43,23 @@ def batch_step(states: list):
 if __name__ == '__main__':
     parser = options.get_training_parser(default_env='gym_env',
                                          default_model='ppo',
-                                         # default_player='default_player',
-                                         default_player='demo_random_player',
+                                         default_player='default_player',
                                          default_learner='default_learner',
                                          )
     args = options.parse_custom_args(parser)
     print(args)
 
+    if args.gpu is not None:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+
     learner = learners.setup_learner(args)
     rollout_worker = DemoRolloutWorkerPool(learner, args)
-    print(f'Start running {rollout_worker} ...')
+    print(f'Start running [{rollout_worker}] ...')
     states = rollout_worker.start()
     player = rollout_worker.get_player()
     while True:
         actions = player.step(states)
         states = rollout_worker.run(actions)
+        learner.run()

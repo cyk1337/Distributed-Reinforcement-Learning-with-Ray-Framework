@@ -18,30 +18,24 @@
 
 @contact: chaiyekun@gmail.com
 
-@file: model.py
+@file: custom_options.py
 
-@time: 20/05/2020 20:53 
+@time: 21/05/2020 15:51 
 
 @desc：       
                
 '''
-from rl.utils import *
 
 
-class RawModel(metaclass=ABCMeta):
-    def __init__(self, args, **kwargs):
-        self.args = args
-        self.build_model(args, **kwargs)
+def get_custom_args(parser):
+    """ add custom arguments here """
+    # rl training
+    parser.add_argument('--num_workers', type=int, default=2)
+    parser.add_argument('--ep_max', type=int, default=10000)
+    parser.add_argument('--traj_len', type=int, default=10, help='Trajectory length')
+    parser.add_argument('--GAMMA', type=float, default=.9, help='Siscounting factor')
 
-    @staticmethod
-    def add_args(parser):
-        raise NotImplementedError
-
-    @abstractmethod
-    def build_model(self, args, **kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def choose_actions(self, obs):
-        """ step model  """
-        raise NotImplementedError
+    parser.add_argument('--gpu', type=str, default=None)
+    # parser.add_argument('--resume_last', action='store_true')
+    # parser.add_argument('--resume_best', action='store_true')
+    parser.add_argument('--debug', action='store_true')

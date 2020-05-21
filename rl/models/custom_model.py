@@ -27,6 +27,7 @@
 '''
 import tensorflow.compat.v1 as tf
 import numpy as np
+from typing import List
 
 from .model import *
 from rl.models import register_model
@@ -45,11 +46,12 @@ class PPO(RawModel):
     def add_args(parser):
         parser.add_argument('--state_dim', type=int, default=3)
         parser.add_argument('--action_dim', type=int, default=1)
-        parser.add_argument('--update_actor_every', type=int, default=10)
-        parser.add_argument('--update_critic_every', type=int, default=10)
+        parser.add_argument('--update_actor_steps', type=int, default=10)
+        parser.add_argument('--update_critic_steps', type=int, default=10)
         parser.add_argument('--actor_lr', type=float, default=1e-4)
         parser.add_argument('--critic_lr', type=float, default=2e-4)
         parser.add_argument('--ppo_name', choices=['kl_gen', 'clip'], default='clip')
+        parser.add_argument("--log_dir", type=str, default=None)
 
     def build_model(self, args, **kwargs):
         self.ppo_method = {
@@ -57,6 +59,14 @@ class PPO(RawModel):
             'clip': dict(name='clip', epsilon=0.2),  # Clipped surrogate objective, find this is better
         }.get(args.ppo_name)
 
+        config = tf.ConfigProto(
+            allow_soft_placement=True,
+            log_device_placement=True
+        )
+
+        config.gpu_options.allow_growth = True
+
+        self.sess = tf.Session(config=config)
         self.tfs = tf.placeholder(tf.float32, [None, args.state_dim], 'state')
 
         # critic
@@ -97,17 +107,18 @@ class PPO(RawModel):
         with tf.variable_scope('actor_train'):
             self.atrain_op = tf.train.AdamOptimizer(args.actor_lr).minimize(self.aloss)
 
-        # tf.summary.FileWriter("log/", self.sess.graph)
-
-        # self.sess.run(tf.global_variables_initializer())
+        if args.log_dir:
+            tf.summary.FileWriter(args.log_dir, self.sess.graph)
+        self.sess.run(tf.global_variables_initializer())
 
     def update(self, s, a, r):
+        print('Start optimizing ...')
         self.sess.run(self.update_oldpi_op)
         adv = self.sess.run(self.advantage, {self.tfs: s, self.tfdc_r: r})
         # adv = (adv - adv.mean())/(adv.std()+1e-6)     # sometimes helpful
 
         # update actor
-        if self.args.ppo_method == 'kl_pen':
+        if self.args.ppo_name == 'kl_pen':
             for _ in range(self.args.update_actor_every):
                 _, kl = self.sess.run(
                     [self.atrain_op, self.kl_mean],
@@ -122,10 +133,10 @@ class PPO(RawModel):
                                                  10)  # sometimes explode, this clipping is my solution
         else:  # clipping method, find this is better (OpenAI's paper)
             [self.sess.run(self.atrain_op, {self.tfs: s, self.tfa: a, self.tfadv: adv}) for _ in
-             range(self.args.update_actor_every)]
+             range(self.args.update_actor_steps)]
 
         # update critic
-        [self.sess.run(self.ctrain_op, {self.tfs: s, self.tfdc_r: r}) for _ in range(self.args.critic_lr)]
+        [self.sess.run(self.ctrain_op, {self.tfs: s, self.tfdc_r: r}) for _ in range(self.args.update_critic_steps)]
 
     def _build_anet(self, name, trainable):
         with tf.variable_scope(name):
@@ -136,10 +147,11 @@ class PPO(RawModel):
         params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=name)
         return norm_dist, params
 
-    def choose_action(self, s):
-        s = s[np.newaxis, :]
-        a = self.sess.run(self.sample_op, {self.tfs: s})[0]
-        return np.clip(a, -2, 2)
+    def choose_actions(self, s: np.ndarray) -> List[np.ndarray]:
+        if s.ndim == 1:
+            s = s[np.newaxis, :]
+        bat_actions = self.sess.run(self.sample_op, {self.tfs: s})
+        return [np.clip(a, -2, 2) for a in bat_actions]
 
     def get_v(self, s):
         if s.ndim < 2: s = s[np.newaxis, :]

@@ -37,3 +37,11 @@ class RawPlayer(metaclass=ABCMeta):
     @abstractmethod
     def step(self, obs):
         raise NotImplementedError
+
+    @abstractmethod
+    def _wrap_actions(self, actions):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _unwrap_observations(self, obs):
+        raise NotImplementedError

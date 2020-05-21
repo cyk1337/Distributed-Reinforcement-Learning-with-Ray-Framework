@@ -25,9 +25,12 @@
 @desc：       
                
 '''
+import numpy as np
+from typing import List
+
 from rl.players import register_player
 from rl.players.player import RawPlayer
-from rl.rl import ACTION
+from rl.rl import ACTION, OBSERVATION
 
 
 @register_player("demo_random_player")
@@ -45,11 +48,23 @@ class DemoRandomPlayer(RawPlayer):
             actions.append(ACTION(a))
         return actions
 
+    def _wrap_actions(self, actions):
+        pass
+
 
 @register_player("default_player")
 class DemoPlayer(RawPlayer):
     def __init__(self, args, **kwargs):
         super().__init__(args, **kwargs)
 
-    def step(self, obs):
-        pass
+    def step(self, obs: List[OBSERVATION]):
+        obs = self._unwrap_observations(obs)
+        actions = self.agent.choose_actions(obs)
+        actions = self._wrap_actions(actions)
+        return actions
+
+    def _unwrap_observations(self, obs):
+        return np.asarray([ob.observation for ob in obs])
+
+    def _wrap_actions(self, actions) -> List[ACTION]:
+        return [ACTION(a) for a in actions]
