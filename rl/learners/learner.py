@@ -25,6 +25,7 @@
 @desc：       
                
 '''
+import ray
 from rl.learners import register_learner
 from rl import players
 
@@ -40,6 +41,9 @@ class Learner(object):
     def add_args(parser):
         """ add custom arguments here """
         parser.add_argument('--batch_size', type=int, default=5)
+
+    def get_player(self):
+        return self.player
 
     def send_trajectory(self, trajectory, Rs=None):
         self.trajectories.append([trajectory, Rs])

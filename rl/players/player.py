@@ -27,6 +27,8 @@
 '''
 from rl.utils import *
 from rl.models import setup_model
+from rl.players import register_player
+from rl.rl import ACTION
 
 
 class RawPlayer(metaclass=ABCMeta):
@@ -45,3 +47,22 @@ class RawPlayer(metaclass=ABCMeta):
     @abstractmethod
     def _unwrap_observations(self, obs):
         raise NotImplementedError
+
+
+@register_player("demo_random_player")
+class DemoRandomPlayer(RawPlayer):
+    def __init__(self, args, **kwargs):
+        super().__init__(args, **kwargs)
+        import gym
+        env = gym.make('Pendulum-v0').unwrapped
+        self.action_space = env.action_space
+
+    def step(self, obs):
+        actions = []
+        for _ in range(len(obs)):
+            a = self.action_space.sample()
+            actions.append(ACTION(a))
+        return actions
+
+    def _wrap_actions(self, actions):
+        pass

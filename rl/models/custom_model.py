@@ -25,6 +25,7 @@
 @desc：       
                
 '''
+import ray
 import tensorflow.compat.v1 as tf
 import numpy as np
 from typing import List
@@ -34,13 +35,14 @@ from rl.models import register_model
 
 
 @register_model('ppo')
-class PPO(RawModel):
+class PPO(object):
     """
     This PPO version is adapted from Mofan Zhou, University of Technology Sydney.
     """
 
     def __init__(self, args, **kwargs):
-        super().__init__(args, **kwargs)
+        self.args = args
+        self.build_model(args, **kwargs)
 
     @staticmethod
     def add_args(parser):

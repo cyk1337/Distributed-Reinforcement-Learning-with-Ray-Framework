@@ -25,15 +25,15 @@
 @desc：       
                
 '''
+
 import os
 import importlib
 
 ENV_REGISTRY = {}
-ENV_CLASS_NAMES = set()
 
 
-def setup_env(args, **kwargs):
-    return ENV_REGISTRY[args.env_name](args, **kwargs)
+def setup_env(args):
+    return ENV_REGISTRY[args.env_name]
 
 
 def register_env(name):
@@ -42,11 +42,11 @@ def register_env(name):
     :param name:
     :return:
     """
+
     def register_env_cls(cls):
         if name in ENV_REGISTRY:
             raise ValueError("Model already registered!")
         ENV_REGISTRY[name] = cls
-        ENV_CLASS_NAMES.add(cls.__name__)
         return cls
 
     return register_env_cls

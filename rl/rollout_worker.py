@@ -25,6 +25,7 @@
 @desc：       
                
 '''
+import ray
 from typing import List
 import numpy as np
 from abc import ABCMeta, abstractmethod
@@ -35,13 +36,13 @@ from rl import envs
 
 class RawRolloutWorkerPool(metaclass=ABCMeta):
     def __init__(self, learner, args, **kwargs):
-        self.env = envs.setup_env(args)
         self.learner = learner
-        self.player = learner.player
+        self.player = learner.get_player()
         self.num_workers = args.num_workers
         self.trajectory = [[] for _ in range(args.num_workers)]
+        self.env = envs.setup_env(args)
+        self.worker_pool = [self.env.remote(args) for _ in range(args.num_workers)]
         self.traj_len = args.traj_len
-        self.worker_pool = [self.env for _ in range(args.num_workers)]
         self.s_ = None
         self.GAMMA = args.GAMMA
 
@@ -61,9 +62,50 @@ class RawRolloutWorkerPool(metaclass=ABCMeta):
         return 'Base rollout worker'
 
 
+class DistRolloutWorkerPool(RawRolloutWorkerPool):
+    def __init__(self, env, args):
+        super().__init__(env, args)
+
+    def start(self) -> List[OBSERVATION]:
+        init_states = ray.get([env.reset.remote() for env in self.worker_pool])
+        self.s_ = [s.observation for s in init_states]
+        return init_states
+
+    def run(self, actions, *args, **kwargs) -> List[ACTION]:
+        """ Start bat envs"""
+        print('Start rollouts workers ...')
+        bat_obs = []
+        for i, obj_id in enumerate([env.step.remote(action) for (env, action) in zip(self.worker_pool, actions)]):
+            ob = ray.get(obj_id)
+            self.trajectory[i].append(
+                TRAJECTORY(self.s_[i], ob.reward, ob.done, actions[i].action, None, None)
+            )
+
+            if ob.done or len(self.trajectory[i]) >= self.traj_len:
+                v_s_ = self.player.agent.get_v(ob.observation)
+                discounted_r = []
+                for traj in self.trajectory[i][::-1]:
+                    v_s_ = traj.reward + self.GAMMA * v_s_
+                    discounted_r.append(v_s_)
+                    discounted_r.reverse()
+                self.learner.send_trajectory(self.trajectory[i], np.array(discounted_r)[:, np.newaxis])
+                self.trajectory[i] = []
+
+            if ob.done:
+                ob = ray.get(envs[i].reset.remote())
+            self.s_[i] = ob.observation
+            bat_obs.append(ob)
+
+        return bat_obs
+
+    def __repr__(self):
+        return f'Demo rollout "{self.num_workers}" workers'
+
+
 class DemoRolloutWorkerPool(RawRolloutWorkerPool):
     def __init__(self, env, args):
         super().__init__(env, args)
+        self.worker_pool = [self.env for _ in range(args.num_workers)]
 
     def start(self) -> List[OBSERVATION]:
         init_states = [env.reset() for env in self.worker_pool]
@@ -97,6 +139,5 @@ class DemoRolloutWorkerPool(RawRolloutWorkerPool):
 
         return bat_obs
 
-
-def __repr__(self):
-    return f'Demo rollout "{self.num_workers}" workers  on [{self.env}]'
+    def __repr__(self):
+        return f'Demo rollout "{self.num_workers}" workers  on [{self.env}]'

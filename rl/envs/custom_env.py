@@ -25,17 +25,21 @@
 @desc：       
                
 '''
+import ray
+
 from rl.envs.env import RawEnvWrapper
 from rl.rl import OBSERVATION
 from rl.envs import register_env
 
-
 @register_env('gym_env')
-class DemoEnvWrapper(RawEnvWrapper):
+@ray.remote
+class DemoEnvWrapper(object):
     def __init__(self, args, **kwargs):
         import gym
         env = gym.make('Pendulum-v0').unwrapped
-        super().__init__(env, args, **kwargs)
+        self.env = env
+        self.args = args
+        # super().__init__(env, args, **kwargs)
 
     def reset(self, *args, **kwargs):
         # custom operation

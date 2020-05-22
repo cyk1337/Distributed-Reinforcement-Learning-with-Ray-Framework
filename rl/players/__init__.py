@@ -29,11 +29,10 @@ import os
 import importlib
 
 PLAYER_REGISTRY = {}
-PLAYER_CLASS_NAMES = set()
 
 
-def setup_player(args, **kwargs):
-    return PLAYER_REGISTRY[args.player_name](args, **kwargs)
+def setup_player(args):
+    return PLAYER_REGISTRY[args.player_name](args)
 
 
 def register_player(name):
@@ -47,7 +46,6 @@ def register_player(name):
         if name in PLAYER_REGISTRY:
             raise ValueError("Player already registered!")
         PLAYER_REGISTRY[name] = cls
-        PLAYER_CLASS_NAMES.add(cls.__name__)
         return cls
 
     return register_player_cls

@@ -25,7 +25,7 @@
 @desc：       
                
 '''
-
+import os
 
 def get_custom_args(parser):
     """ add custom arguments here """
@@ -39,3 +39,12 @@ def get_custom_args(parser):
     # parser.add_argument('--resume_last', action='store_true')
     # parser.add_argument('--resume_best', action='store_true')
     parser.add_argument('--debug', action='store_true')
+
+
+def get_ray_args(parser):
+    """ add ray arguments here """
+    group = parser.add_argument_group('Ray configuration')
+    group.add_argument('--address', type=str, default=None)
+    group.add_argument('--redis_address', type=str, default=None)
+    group.add_argument('--num_cpus', type=int, default=os.cpu_count())
+    group.add_argument('--num_gpus', type=int, default=None)

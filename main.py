@@ -25,20 +25,13 @@
 @desc：       
                
 '''
-import argparse
 import os
-import sys
+import ray
 
 from rl import options, learners
 
 # To be customized
-from rl.rollout_worker import DemoRolloutWorkerPool
-
-
-def batch_step(states: list):
-    # random
-    pass
-
+from rl.rollout_worker import DemoRolloutWorkerPool, DistRolloutWorkerPool
 
 if __name__ == '__main__':
     parser = options.get_training_parser(default_env='gym_env',
@@ -51,11 +44,18 @@ if __name__ == '__main__':
 
     if args.gpu is not None:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    if not getattr(args, 'num_gpus'):
+        args.num_gpus = 1
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "3"
+
+    ray.init(address=args.address, redis_address=args.redis_address, num_cpus=args.num_cpus, num_gpus=args.num_gpus,
+             include_webui=False, ignore_reinit_error=True)
+    assert ray.is_initialized()
 
     learner = learners.setup_learner(args)
-    rollout_worker = DemoRolloutWorkerPool(learner, args)
+    # learner = learner.remote(args)
+    rollout_worker = DistRolloutWorkerPool(learner, args)
     print(f'Start running [{rollout_worker}] ...')
     states = rollout_worker.start()
     player = rollout_worker.get_player()

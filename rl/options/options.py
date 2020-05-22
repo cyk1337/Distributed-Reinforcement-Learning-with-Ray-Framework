@@ -27,7 +27,7 @@
 '''
 
 import argparse
-from rl.options.custom_options import get_custom_args
+from rl.options.custom_options import get_custom_args, get_ray_args
 
 
 def get_training_parser(default_env='gym_env',
@@ -35,6 +35,7 @@ def get_training_parser(default_env='gym_env',
                         default_player='default_player',
                         default_learner='default_learner'):
     parser = get_parser('Dist.ray.train')
+    get_ray_args(parser)
     add_env_args(parser, default_env)
     add_player_args(parser, default_player)
     add_learner_args(parser, default_learner)
@@ -60,7 +61,7 @@ def add_env_args(parser, default_env):
     from rl.envs import ENV_REGISTRY
     group.add_argument('--env_name', choices=[ENV_REGISTRY.keys()], default=default_env)
     args, _ = parser.parse_known_args()
-    cls = ENV_REGISTRY[args.env_name]
+    cls = ENV_REGISTRY.get(args.env_name, None)
     if hasattr(cls, "add_args"):
         cls.add_args(parser)
     return group

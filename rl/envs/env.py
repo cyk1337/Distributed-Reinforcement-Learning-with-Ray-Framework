@@ -25,10 +25,10 @@
 @desc：       
                
 '''
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 
-class RawEnvWrapper(metaclass=ABCMeta):
+class RawEnvWrapper(object):
     def __init__(self, env, args, **kwargs):
         if not env:
             raise ValueError('Invalid environment provided!')

@@ -29,7 +29,6 @@ import os
 import importlib
 
 LEARNER_REGISTRY = {}
-LEARNER_CLASS_NAMES = set()
 
 
 def setup_learner(args, **kwargs):
@@ -47,7 +46,6 @@ def register_learner(name):
         if name in LEARNER_REGISTRY:
             raise ValueError("Learner already registered!")
         LEARNER_REGISTRY[name] = cls
-        LEARNER_CLASS_NAMES.add(cls.__name__)
         return cls
 
     return register_learner_cls
