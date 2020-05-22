@@ -25,7 +25,7 @@
 @desc：       
                
 '''
-import ray
+from rl.utils import *
 import numpy as np
 from typing import List
 
@@ -33,18 +33,19 @@ from rl.players import register_player
 from rl.models import setup_model
 from rl.players.player import RawPlayer
 from rl.rl import ACTION, OBSERVATION
-
-
+from rl.models.custom_model import *
 
 
 @register_player("default_player")
 class DemoPlayer(object):
     def __init__(self, args, **kwargs):
-        self.agent = setup_model(args)
+        self.model = setup_model(args)
+        self.agent = self.model(args)
         self.args = args
 
     def step(self, obs: List[OBSERVATION]):
         obs = self._unwrap_observations(obs)
+        # actions = self.agent.choose_actions.remote(obs)
         actions = self.agent.choose_actions(obs)
         actions = self._wrap_actions(actions)
         return actions

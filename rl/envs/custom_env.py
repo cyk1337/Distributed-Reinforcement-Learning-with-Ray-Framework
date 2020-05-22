@@ -31,23 +31,23 @@ from rl.envs.env import RawEnvWrapper
 from rl.rl import OBSERVATION
 from rl.envs import register_env
 
+
 @register_env('gym_env')
 @ray.remote
 class DemoEnvWrapper(object):
-    def __init__(self, args, **kwargs):
+    def __init__(self, args):
         import gym
         env = gym.make('Pendulum-v0').unwrapped
         self.env = env
         self.args = args
-        # super().__init__(env, args, **kwargs)
 
-    def reset(self, *args, **kwargs):
+    def reset(self):
         # custom operation
         ob = self.env.reset()
         init_ob = OBSERVATION(ob, None, None)
         return init_ob
 
-    def step(self, action, *args, **kwargs):
+    def step(self, action, **kwargs):
         action = self._unwrap_action(action)
         observation = self.env.step(action)
         return self._wrap_observation(observation)

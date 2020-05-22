@@ -27,12 +27,13 @@
 '''
 import os
 import importlib
+from functools import wraps
 
 MODEL_REGISTRY = {}
 
 
-def setup_model(args, **kwargs):
-    return MODEL_REGISTRY[args.model_name](args, **kwargs)
+def setup_model(args):
+    return MODEL_REGISTRY[args.model_name]
 
 
 def register_model(name):
@@ -41,7 +42,7 @@ def register_model(name):
     :param name:
     :return:
     """
-
+    @wraps(name)
     def register_model_cls(cls):
         if name in MODEL_REGISTRY:
             raise ValueError("Model already registered!")

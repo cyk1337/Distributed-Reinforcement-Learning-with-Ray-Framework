@@ -35,6 +35,7 @@ from rl.models import register_model
 
 
 @register_model('ppo')
+# @ray.remote
 class PPO(object):
     """
     This PPO version is adapted from Mofan Zhou, University of Technology Sydney.

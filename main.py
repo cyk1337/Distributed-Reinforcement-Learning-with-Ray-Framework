@@ -26,10 +26,10 @@
                
 '''
 import os
-import ray
-
+# import ray
+from rl.utils import *
 from rl import options, learners
-
+from rl.players import custom_player
 # To be customized
 from rl.rollout_worker import DemoRolloutWorkerPool, DistRolloutWorkerPool
 
@@ -45,9 +45,9 @@ if __name__ == '__main__':
     if args.gpu is not None:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     if not getattr(args, 'num_gpus'):
-        args.num_gpus = 1
+        args.num_gpus = 2
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = "3"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "2,3"
 
     ray.init(address=args.address, redis_address=args.redis_address, num_cpus=args.num_cpus, num_gpus=args.num_gpus,
              include_webui=False, ignore_reinit_error=True)

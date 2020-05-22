@@ -94,7 +94,7 @@ def add_model_args(parser, default_model):
     from rl.models import MODEL_REGISTRY
     group.add_argument('--model_name', choices=[MODEL_REGISTRY.keys()], default=default_model)
     args, _ = parser.parse_known_args()
-    cls = MODEL_REGISTRY[args.model_name]
+    cls = MODEL_REGISTRY.get(args.model_name, None)
     if hasattr(cls, "add_args"):
         cls.add_args(parser)
     return group
