@@ -30,14 +30,12 @@ import tensorflow.compat.v1 as tf
 import numpy as np
 from typing import List
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models'))
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-# from rl.models import register_model
+# from .model import *
+from rl.models import register_model
 
 
 # @register_model('ppo')
-@ray.remote(num_gpus=1)
+# @ray.remote
 class PPO(object):
     """
     This PPO version is adapted from Mofan Zhou, University of Technology Sydney.
@@ -47,16 +45,16 @@ class PPO(object):
         self.args = args
         self.build_model(args)
 
-    # @staticmethod
-    # def add_args(parser):
-    #     parser.add_argument('--state_dim', type=int, default=3)
-    #     parser.add_argument('--action_dim', type=int, default=1)
-    #     parser.add_argument('--update_actor_steps', type=int, default=10)
-    #     parser.add_argument('--update_critic_steps', type=int, default=10)
-    #     parser.add_argument('--actor_lr', type=float, default=1e-4)
-    #     parser.add_argument('--critic_lr', type=float, default=2e-4)
-    #     parser.add_argument('--ppo_name', choices=['kl_gen', 'clip'], default='clip')
-    #     parser.add_argument("--log_dir", type=str, default=None)
+    @staticmethod
+    def add_args(parser):
+        parser.add_argument('--state_dim', type=int, default=3)
+        parser.add_argument('--action_dim', type=int, default=1)
+        parser.add_argument('--update_actor_steps', type=int, default=10)
+        parser.add_argument('--update_critic_steps', type=int, default=10)
+        parser.add_argument('--actor_lr', type=float, default=1e-4)
+        parser.add_argument('--critic_lr', type=float, default=2e-4)
+        parser.add_argument('--ppo_name', choices=['kl_gen', 'clip'], default='clip')
+        parser.add_argument("--log_dir", type=str, default=None)
 
     def build_model(self, args, **kwargs):
         self.ppo_method = {
@@ -64,14 +62,15 @@ class PPO(object):
             'clip': dict(name='clip', epsilon=0.2),  # Clipped surrogate objective, find this is better
         }.get(args.ppo_name)
 
-        config = tf.ConfigProto(
-            allow_soft_placement=True,
-            log_device_placement=True
-        )
+        # config = tf.ConfigProto(
+        #     allow_soft_placement=True,
+        #     log_device_placement=True
+        # )
+        #
+        # config.gpu_options.allow_growth = True
 
-        config.gpu_options.allow_growth = True
-
-        self.sess = tf.Session(config=config)
+        # self.sess = tf.Session(config=config)
+        self.sess = tf.Session()
         self.tfs = tf.placeholder(tf.float32, [None, args.state_dim], 'state')
 
         # critic

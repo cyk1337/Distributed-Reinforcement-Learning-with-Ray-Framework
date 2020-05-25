@@ -27,7 +27,7 @@
 '''
 import ray
 
-from rl.envs.env import RawEnvWrapper
+# from rl.envs.env import RawEnvWrapper
 from rl.rl import OBSERVATION
 from rl.envs import register_env
 

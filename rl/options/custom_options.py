@@ -27,6 +27,7 @@
 '''
 import os
 
+
 def get_custom_args(parser):
     """ add custom arguments here """
     # rl training
@@ -39,6 +40,16 @@ def get_custom_args(parser):
     # parser.add_argument('--resume_last', action='store_true')
     # parser.add_argument('--resume_best', action='store_true')
     parser.add_argument('--debug', action='store_true')
+
+    # mdoel
+    parser.add_argument('--state_dim', type=int, default=3)
+    parser.add_argument('--action_dim', type=int, default=1)
+    parser.add_argument('--update_actor_steps', type=int, default=10)
+    parser.add_argument('--update_critic_steps', type=int, default=10)
+    parser.add_argument('--actor_lr', type=float, default=1e-4)
+    parser.add_argument('--critic_lr', type=float, default=2e-4)
+    parser.add_argument('--ppo_name', choices=['kl_gen', 'clip'], default='clip')
+    parser.add_argument("--log_dir", type=str, default=None)
 
 
 def get_ray_args(parser):

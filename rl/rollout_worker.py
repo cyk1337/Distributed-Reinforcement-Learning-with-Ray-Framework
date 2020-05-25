@@ -82,7 +82,7 @@ class DistRolloutWorkerPool(RawRolloutWorkerPool):
             )
 
             if ob.done or len(self.trajectory[i]) >= self.traj_len:
-                v_s_ = self.player.agent.get_v(ob.observation)
+                v_s_ = ray.get(self.player.agent.get_v.remote(ob.observation))
                 discounted_r = []
                 for traj in self.trajectory[i][::-1]:
                     v_s_ = traj.reward + self.GAMMA * v_s_

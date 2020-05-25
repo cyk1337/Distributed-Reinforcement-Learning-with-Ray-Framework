@@ -26,6 +26,7 @@
                
 '''
 import ray
+from copy import deepcopy
 from rl.learners import register_learner
 from rl import players
 
@@ -35,6 +36,8 @@ class Learner(object):
     def __init__(self, args):
         self.player = players.setup_player(args)
         self.trajectories = []
+        self.learner_pool = [None for _ in range(args.num_gpus)]
+
         self.batch_size = args.batch_size
 
     @staticmethod
@@ -57,7 +60,8 @@ class Learner(object):
         trajectories = self.trajectories[:self.batch_size]
         self.trajectories = self.trajectories[self.batch_size:]
         bat_obs, bat_actions, bat_Rs = self.pack_trajectories(trajectories)
-        self.player.agent.update(bat_obs, bat_actions, bat_Rs)
+        # get gradients and map reduce
+        self.player.agent.update.remote(bat_obs, bat_actions, bat_Rs)
 
     def pack_trajectories(self, trajectories):
         # todo: pack trajectories

@@ -72,7 +72,7 @@ def add_player_args(parser, default_player):
     from rl.players import PLAYER_REGISTRY
     group.add_argument('--player_name', choices=[PLAYER_REGISTRY.keys()], default=default_player)
     args, _ = parser.parse_known_args()
-    cls = PLAYER_REGISTRY[args.player_name]
+    cls = PLAYER_REGISTRY.get(args.player_name, None)
     if hasattr(cls, "add_args"):
         cls.add_args(parser)
     return group
@@ -83,7 +83,7 @@ def add_learner_args(parser, default_learner):
     from rl.learners import LEARNER_REGISTRY
     group.add_argument('--learner_name', choices=[LEARNER_REGISTRY.keys()], default=default_learner)
     args, _ = parser.parse_known_args()
-    cls = LEARNER_REGISTRY[args.learner_name]
+    cls = LEARNER_REGISTRY.get(args.learner_name, None)
     if hasattr(cls, "add_args"):
         cls.add_args(parser)
     return group

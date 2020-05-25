@@ -27,7 +27,6 @@
 '''
 import os
 import importlib
-from functools import wraps
 
 MODEL_REGISTRY = {}
 
@@ -42,7 +41,6 @@ def register_model(name):
     :param name:
     :return:
     """
-    @wraps(name)
     def register_model_cls(cls):
         if name in MODEL_REGISTRY:
             raise ValueError("Model already registered!")
@@ -51,10 +49,14 @@ def register_model(name):
 
     return register_model_cls
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'models'))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-models_dir = os.path.dirname(__file__)
-for file in os.listdir(models_dir):
-    path = os.path.join(models_dir, file)
-    if not file.startswith('_') and not file.startswith(".") and (file.endswith('.py') or os.path.isdir(path)):
-        model_name = file[:file.find('.py')] if file.endswith('.py') else file
-        module = importlib.import_module(f'rl.models.{model_name}')
+# models_dir = os.path.dirname(__file__)
+# for file in os.listdir(models_dir):
+#     path = os.path.join(models_dir, file)
+#     if not file.startswith('_') and not file.startswith(".") and (file.endswith('.py') or os.path.isdir(path)):
+#         model_name = file[:file.find('.py')] if file.endswith('.py') else file
+#         module = importlib.import_module(f'rl.models.{model_name}')

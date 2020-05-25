@@ -25,28 +25,27 @@
 @desc：       
                
 '''
-from rl.utils import *
-import numpy as np
 from typing import List
+import numpy as np
+import ray
 
 from rl.players import register_player
-from rl.models import setup_model
-from rl.players.player import RawPlayer
 from rl.rl import ACTION, OBSERVATION
-from rl.models.custom_model import *
+from models.custom_model import PPO
 
 
 @register_player("default_player")
 class DemoPlayer(object):
     def __init__(self, args, **kwargs):
-        self.model = setup_model(args)
-        self.agent = self.model(args)
+        # self.model = setup_model(args)
+        self.model = PPO
+        self.agent = self.model.remote(args)
         self.args = args
 
     def step(self, obs: List[OBSERVATION]):
         obs = self._unwrap_observations(obs)
-        # actions = self.agent.choose_actions.remote(obs)
-        actions = self.agent.choose_actions(obs)
+        actions_idx = self.agent.choose_actions.remote(obs)
+        actions = ray.get(actions_idx)
         actions = self._wrap_actions(actions)
         return actions
 

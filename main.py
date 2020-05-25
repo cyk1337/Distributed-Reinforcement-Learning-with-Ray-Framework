@@ -29,9 +29,8 @@ import os
 # import ray
 from rl.utils import *
 from rl import options, learners
-from rl.players import custom_player
 # To be customized
-from rl.rollout_worker import DemoRolloutWorkerPool, DistRolloutWorkerPool
+from rl.rollout_worker import DistRolloutWorkerPool
 
 if __name__ == '__main__':
     parser = options.get_training_parser(default_env='gym_env',
@@ -54,7 +53,7 @@ if __name__ == '__main__':
     assert ray.is_initialized()
 
     learner = learners.setup_learner(args)
-    # learner = learner.remote(args)
+
     rollout_worker = DistRolloutWorkerPool(learner, args)
     print(f'Start running [{rollout_worker}] ...')
     states = rollout_worker.start()
