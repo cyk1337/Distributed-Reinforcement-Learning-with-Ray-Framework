@@ -8,9 +8,10 @@ conda env create -f ray.yml
 # ray[tune]
 ```
 
+# Architecture
 ![Arch](docs/rl.dist.ray.png)
 
-## Demo train
+## Training
 ```bash
 (ray) $ python main.py --env_name  "gym_env"\
                        --agent_name "default_agent"\
