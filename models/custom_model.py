@@ -29,15 +29,12 @@ import ray
 import tensorflow.compat.v1 as tf
 import numpy as np
 from typing import List
+from ray.experimental.tf_utils import TensorFlowVariables
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models'))
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-# from rl.models import register_model
+from models import register_model
 
 
-# @register_model('ppo')
-@ray.remote(num_gpus=1)
+@register_model('ppo')
 class PPO(object):
     """
     This PPO version is adapted from Mofan Zhou, University of Technology Sydney.
@@ -47,16 +44,17 @@ class PPO(object):
         self.args = args
         self.build_model(args)
 
-    # @staticmethod
-    # def add_args(parser):
-    #     parser.add_argument('--state_dim', type=int, default=3)
-    #     parser.add_argument('--action_dim', type=int, default=1)
-    #     parser.add_argument('--update_actor_steps', type=int, default=10)
-    #     parser.add_argument('--update_critic_steps', type=int, default=10)
-    #     parser.add_argument('--actor_lr', type=float, default=1e-4)
-    #     parser.add_argument('--critic_lr', type=float, default=2e-4)
-    #     parser.add_argument('--ppo_name', choices=['kl_gen', 'clip'], default='clip')
-    #     parser.add_argument("--log_dir", type=str, default=None)
+    @staticmethod
+    def add_args(parser):
+        parser.add_argument('--state_dim', type=int, default=3)
+        parser.add_argument('--action_dim', type=int, default=1)
+        # parser.add_argument('--update_actor_steps', type=int, default=10)  # unused in ray
+        # parser.add_argument('--update_critic_steps', type=int, default=10)  # unused in ray
+        parser.add_argument('--actor_lr', type=float, default=1e-4)
+        parser.add_argument('--critic_lr', type=float, default=2e-4)
+        parser.add_argument('--clip_norm', type=float, default=5)
+        parser.add_argument('--ppo_name', choices=['kl_gen', 'clip'], default='clip')
+        parser.add_argument("--log_dir", type=str, default=None)
 
     def build_model(self, args, **kwargs):
         self.ppo_method = {
@@ -81,7 +79,10 @@ class PPO(object):
         self.tfdc_r = tf.placeholder(tf.float32, [None, 1], 'discounted_r')
         self.advantage = self.tfdc_r - self.v
         self.closs = tf.reduce_mean(tf.square(self.advantage))
-        self.ctrain_op = tf.train.AdamOptimizer(args.actor_lr).minimize(self.closs)
+        self.critic_opt = tf.train.AdamOptimizer(args.critic_lr)
+        self.c_grads = self.critic_opt.compute_gradients(self.closs)
+        self.ctrain_op = self.critic_opt.apply_gradients(self.c_grads)
+        self.c_vars = TensorFlowVariables(self.closs, self.sess)
 
         # actor
         pi, pi_params = self._build_anet('pi', trainable=True)
@@ -110,38 +111,28 @@ class PPO(object):
                                      1. + self.ppo_method['epsilon']) * self.tfadv))
 
         with tf.variable_scope('actor_train'):
-            self.atrain_op = tf.train.AdamOptimizer(args.actor_lr).minimize(self.aloss)
+            self.actor_opt = tf.train.AdamOptimizer(args.actor_lr)
+            self.a_grads = self.actor_opt.compute_gradients(self.aloss)
+            self.a_grads = [(t, v) for t, v in self.a_grads if t is not None]
+            self.atrain_op = self.actor_opt.apply_gradients(self.a_grads)
+            self.a_vars = TensorFlowVariables(self.aloss, self.sess)
 
         if args.log_dir:
             tf.summary.FileWriter(args.log_dir, self.sess.graph)
         self.sess.run(tf.global_variables_initializer())
 
-    def update(self, s, a, r):
-        print('Start optimizing ...')
+    @ray.method(num_return_vals=2)
+    def step(self, s, a, r, a_weights, c_weights):
+        self.set_weights(a_weights, c_weights)
+
         self.sess.run(self.update_oldpi_op)
         adv = self.sess.run(self.advantage, {self.tfs: s, self.tfdc_r: r})
-        # adv = (adv - adv.mean())/(adv.std()+1e-6)     # sometimes helpful
 
         # update actor
-        if self.args.ppo_name == 'kl_pen':
-            for _ in range(self.args.update_actor_every):
-                _, kl = self.sess.run(
-                    [self.atrain_op, self.kl_mean],
-                    {self.tfs: s, self.tfa: a, self.tfadv: adv, self.tflam: self.ppo_method['lam']})
-                if kl > 4 * self.ppo_method['kl_target']:  # this in in google's paper
-                    break
-            if kl < self.ppo_method['kl_target'] / 1.5:  # adaptive lambda, this is in OpenAI's paper
-                self.ppo_method['lam'] /= 2
-            elif kl > self.ppo_method['kl_target'] * 1.5:
-                self.ppo_method['lam'] *= 2
-                self.ppo_method['lam'] = np.clip(self.ppo_method['lam'], 1e-4,
-                                                 10)  # sometimes explode, this clipping is my solution
-        else:  # clipping method, find this is better (OpenAI's paper)
-            [self.sess.run(self.atrain_op, {self.tfs: s, self.tfa: a, self.tfadv: adv}) for _ in
-             range(self.args.update_actor_steps)]
-
+        a_grads = self.sess.run([grad[0] for grad in self.a_grads], {self.tfs: s, self.tfa: a, self.tfadv: adv})
         # update critic
-        [self.sess.run(self.ctrain_op, {self.tfs: s, self.tfdc_r: r}) for _ in range(self.args.update_critic_steps)]
+        c_grads = self.sess.run([grad[0] for grad in self.c_grads], {self.tfs: s, self.tfdc_r: r})
+        return a_grads, c_grads
 
     def _build_anet(self, name, trainable):
         with tf.variable_scope(name):
@@ -161,3 +152,11 @@ class PPO(object):
     def get_v(self, s):
         if s.ndim < 2: s = s[np.newaxis, :]
         return self.sess.run(self.v, {self.tfs: s})[0, 0]
+
+    @ray.method(num_return_vals=2)
+    def get_weights(self):
+        return self.a_vars.get_weights(), self.c_vars.get_weights()
+
+    def set_weights(self, a_weights, c_weights):
+        self.a_vars.set_weights(a_weights)
+        self.c_vars.set_weights(c_weights)

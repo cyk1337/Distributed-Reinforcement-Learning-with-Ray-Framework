@@ -18,26 +18,27 @@
 
 @contact: chaiyekun@gmail.com
 
-@file: learner.py
+@file: custom_player.py
 
-@time: 20/05/2020 19:02 
+@time: 20/05/2020 23:07 
 
 @desc：       
                
 '''
+from typing import List
+import numpy as np
 import ray
-from copy import deepcopy
-from rl.learners import register_learner
-from rl import players
+
+from agents import register_agent
+from rl import ACTION, OBSERVATION
 
 
-@register_learner('default_learner')
-class Learner(object):
-    def __init__(self, args):
-        self.player = players.setup_player(args)
+@register_agent("default_agent")
+class DefaultAgent(object):
+    def __init__(self, args, model):
+        self.model = model
         self.trajectories = []
-        self.learner_pool = [None for _ in range(args.num_gpus)]
-
+        self.args = args
         self.batch_size = args.batch_size
 
     @staticmethod
@@ -45,26 +46,49 @@ class Learner(object):
         """ add custom arguments here """
         parser.add_argument('--batch_size', type=int, default=5)
 
-    def get_player(self):
-        return self.player
+    def set_weights(self, weights):
+        f = self.model.set_weights
+        f.remote(*weights) if hasattr(f, 'remote') else f(*weights)
+
+    @ray.method(num_return_vals=2)
+    def get_weights(self):
+        f = self.model.get_weights
+        a, c = f.remote() if hasattr(f, 'remote') else f()
+        return a, c
+
+    def step(self, obs: List[OBSERVATION]):
+        obs = self._unwrap_observations(obs)
+        actions_idx = self.model.choose_actions.remote(obs)
+        actions = ray.get(actions_idx)
+        actions = self._wrap_actions(actions)
+        return actions
+
+    def _unwrap_observations(self, obs):
+        return np.asarray([ob.observation for ob in obs])
+
+    def _wrap_actions(self, actions) -> List[ACTION]:
+        return [ACTION(a) for a in actions]
 
     def send_trajectory(self, trajectory, Rs=None):
         self.trajectories.append([trajectory, Rs])
 
-    def run(self):
+    def fetch_grads(self, weights):
         # while True:
         if len(self.trajectories) >= self.batch_size:
-            self.update_parameters()
+            grads = self.compute_gradients(weights)
+            print(f'start learning \n {"*"*80}')
+            return grads
 
-    def update_parameters(self):
+    def compute_gradients(self, weights):
         trajectories = self.trajectories[:self.batch_size]
         self.trajectories = self.trajectories[self.batch_size:]
+        # prepare trajectories
         bat_obs, bat_actions, bat_Rs = self.pack_trajectories(trajectories)
-        # get gradients and map reduce
-        self.player.agent.update.remote(bat_obs, bat_actions, bat_Rs)
+        # get gradients
+        grads = self.model.step.remote(bat_obs, bat_actions, bat_Rs, *weights)
+        return grads
 
     def pack_trajectories(self, trajectories):
-        # todo: pack trajectories
         bat_obs = []
         bat_actions = []
         bat_Rs = []

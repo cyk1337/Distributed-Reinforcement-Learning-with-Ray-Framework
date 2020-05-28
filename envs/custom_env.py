@@ -26,10 +26,8 @@
                
 '''
 import ray
-
-# from rl.envs.env import RawEnvWrapper
-from rl.rl import OBSERVATION
-from rl.envs import register_env
+from rl import OBSERVATION
+from envs import register_env
 
 
 @register_env('gym_env')

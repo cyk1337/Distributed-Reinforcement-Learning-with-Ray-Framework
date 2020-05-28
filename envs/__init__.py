@@ -57,4 +57,4 @@ for file in os.listdir(envs_dir):
     path = os.path.join(envs_dir, file)
     if not file.startswith('_') and not file.startswith(".") and (file.endswith('.py') or os.path.isdir(path)):
         env_name = file[:file.find('.py')] if file.endswith('.py') else file
-        module = importlib.import_module(f'rl.envs.{env_name}')
+        module = importlib.import_module(f'envs.{env_name}')

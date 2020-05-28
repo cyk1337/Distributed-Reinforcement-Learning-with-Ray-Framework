@@ -27,18 +27,19 @@
 '''
 
 import argparse
-from rl.options.custom_options import get_custom_args, get_ray_args
+from options.custom_options import get_custom_args, get_ray_args
 
 
 def get_training_parser(default_env='gym_env',
                         default_model='ppo',
-                        default_player='default_player',
-                        default_learner='default_learner'):
+                        default_agent='default_agent',
+                        # default_learner='default_learner',
+                        ):
     parser = get_parser('Dist.ray.train')
     get_ray_args(parser)
     add_env_args(parser, default_env)
-    add_player_args(parser, default_player)
-    add_learner_args(parser, default_learner)
+    add_agent_args(parser, default_agent)
+    # add_learner_args(parser, default_learner)
     add_model_args(parser, default_model)
     add_save_args(parser)
     return parser
@@ -58,7 +59,7 @@ def add_save_args(parser):
 
 def add_env_args(parser, default_env):
     group = parser.add_argument_group('Env configuration')
-    from rl.envs import ENV_REGISTRY
+    from envs import ENV_REGISTRY
     group.add_argument('--env_name', choices=[ENV_REGISTRY.keys()], default=default_env)
     args, _ = parser.parse_known_args()
     cls = ENV_REGISTRY.get(args.env_name, None)
@@ -67,23 +68,13 @@ def add_env_args(parser, default_env):
     return group
 
 
-def add_player_args(parser, default_player):
+def add_agent_args(parser, default_player):
     group = parser.add_argument_group('Player configuration')
-    from rl.players import PLAYER_REGISTRY
-    group.add_argument('--player_name', choices=[PLAYER_REGISTRY.keys()], default=default_player)
+    from agents import AGENT_REGISTRY
+    group.add_argument('--agent_name', choices=[AGENT_REGISTRY.keys()], default=default_player)
     args, _ = parser.parse_known_args()
-    cls = PLAYER_REGISTRY.get(args.player_name, None)
-    if hasattr(cls, "add_args"):
-        cls.add_args(parser)
-    return group
-
-
-def add_learner_args(parser, default_learner):
-    group = parser.add_argument_group('Player configuration')
-    from rl.learners import LEARNER_REGISTRY
-    group.add_argument('--learner_name', choices=[LEARNER_REGISTRY.keys()], default=default_learner)
-    args, _ = parser.parse_known_args()
-    cls = LEARNER_REGISTRY.get(args.learner_name, None)
+    cls = AGENT_REGISTRY.get(args.agent_name, None)
+    assert cls is not None, 'No agent registered!'
     if hasattr(cls, "add_args"):
         cls.add_args(parser)
     return group
@@ -91,7 +82,7 @@ def add_learner_args(parser, default_learner):
 
 def add_model_args(parser, default_model):
     group = parser.add_argument_group('Model configuration')
-    from rl.models import MODEL_REGISTRY
+    from models import MODEL_REGISTRY
     group.add_argument('--model_name', choices=[MODEL_REGISTRY.keys()], default=default_model)
     args, _ = parser.parse_known_args()
     cls = MODEL_REGISTRY.get(args.model_name, None)
@@ -104,3 +95,13 @@ def parse_custom_args(parser):
     get_custom_args(parser)
     args = parser.parse_args()
     return args
+
+# def add_learner_args(parser, default_learner):
+#     group = parser.add_argument_group('Player configuration')
+#     from learners import LEARNER_REGISTRY
+#     group.add_argument('--learner_name', choices=[LEARNER_REGISTRY.keys()], default=default_learner)
+#     args, _ = parser.parse_known_args()
+#     cls = LEARNER_REGISTRY.get(args.learner_name, None)
+#     if hasattr(cls, "add_args"):
+#         cls.add_args(parser)
+#     return group

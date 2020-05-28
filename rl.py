@@ -27,7 +27,6 @@
 '''
 
 from collections import namedtuple
-from random import randint
 
 OBSERVATION_FIELDS = [
     'observation',
@@ -51,23 +50,3 @@ TRAJECTORY_FIELDS = [
 OBSERVATION = namedtuple('Observation', OBSERVATION_FIELDS)
 ACTION = namedtuple('Action', ACTION_FIELDS)
 TRAJECTORY = namedtuple('Trajectory', TRAJECTORY_FIELDS)
-
-
-class Trajectory(object):
-    def __init__(self, max_size=None):
-        self._storage = []
-        self._max_size = max_size
-        self._next_idx = 0
-
-    def add(self, traj):
-        if self._next_idx >= len(self._storage):
-            self._storage.append(traj)
-        else:
-            self._storage[self._next_idx] = traj
-        self._next_idx = (self._next_idx + 1) % self._max_size
-
-    def sample(self, bsz: int):
-        return []
-
-    def __len__(self):
-        return len(self._storage)

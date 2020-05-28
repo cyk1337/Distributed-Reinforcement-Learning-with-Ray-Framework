@@ -28,32 +28,32 @@
 import os
 import importlib
 
-PLAYER_REGISTRY = {}
+AGENT_REGISTRY = {}
 
 
-def setup_player(args):
-    return PLAYER_REGISTRY[args.player_name](args)
+def setup_agent(args):
+    return AGENT_REGISTRY[args.agent_name]
 
 
-def register_player(name):
+def register_agent(name):
     """
-    register your custom player before class
+    register your custom agent before class
     :param name:
     :return:
     """
 
-    def register_player_cls(cls):
-        if name in PLAYER_REGISTRY:
+    def register_agent_cls(cls):
+        if name in AGENT_REGISTRY:
             raise ValueError("Player already registered!")
-        PLAYER_REGISTRY[name] = cls
+        AGENT_REGISTRY[name] = cls
         return cls
 
-    return register_player_cls
+    return register_agent_cls
 
 
-players_dir = os.path.dirname(__file__)
-for file in os.listdir(players_dir):
-    path = os.path.join(players_dir, file)
+agents_dir = os.path.dirname(__file__)
+for file in os.listdir(agents_dir):
+    path = os.path.join(agents_dir, file)
     if not file.startswith('_') and not file.startswith(".") and (file.endswith('.py') or os.path.isdir(path)):
-        player_name = file[:file.find('.py')] if file.endswith('.py') else file
-        module = importlib.import_module(f'rl.players.{player_name}')
+        agent_name = file[:file.find('.py')] if file.endswith('.py') else file
+        module = importlib.import_module(f'agents.{agent_name}')
