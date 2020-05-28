@@ -24,7 +24,7 @@ conda env create -f ray.yml
 ## Custom usage
 - Custom environment. `./envs/custom_env.py`
 ```python
-@register_env('custom_env_name')
+@register_env('custom_env')
 @ray.remote
 class CustomEnvWrapper(object):
     def __init__(self, args):
@@ -74,7 +74,7 @@ class CustomModel(object):
 
 - Custom agents.
 ```python
-@register_agent("default_agent")
+@register_agent("custom_agent")
 class DefaultAgent(object):
     def __init__(self, args, model):
         self.model = model
@@ -103,3 +103,16 @@ class DefaultAgent(object):
 - Custom arguments.
 Modify `get_custom_args` function in `options/custom_options.py`.
 
+- Run the customized model
+```bash
+(ray) $ python main.py --env_name  "custom_env"\
+                       --agent_name "custom_agent"\
+                       --model_name "custom_model" \
+                       --num_envs_per_worker 3 \
+                       --num_workers 3  \
+                       --gpu "0,1,2" \
+                       --num_gpus 3 \
+                       --num_cpus 8 \
+                       --batch_size 10 
+                       # custom argument optiions...
+```
