@@ -1,4 +1,4 @@
-# Distributed-Machine-Learning-with-Ray-Framework
+# Distributed-Reinforcement-Learning-with-Ray-Framework
 
 ## Requirements
 ```bash
