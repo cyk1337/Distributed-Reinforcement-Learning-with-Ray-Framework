@@ -8,6 +8,8 @@ conda env create -f ray.yml
 # ray[tune]
 ```
 
+![Arch](docs/rl.dist.ray.png)
+
 ## Demo train
 ```bash
 (ray) $ python main.py --env_name  "gym_env"\
