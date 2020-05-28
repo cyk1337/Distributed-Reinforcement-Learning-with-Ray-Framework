@@ -114,5 +114,5 @@ Modify `get_custom_args` function in `options/custom_options.py`.
                        --num_gpus 3 \
                        --num_cpus 8 \
                        --batch_size 10 
-                       # custom argument optiions...
+                       # custom argument options...
 ```
