@@ -8,7 +8,7 @@ conda env create -f ray.yml
 # ray[tune]
 ```
 
-# Architecture
+## Architecture
 ![Arch](docs/rl.dist.ray.png)
 
 ## Training
