@@ -9,7 +9,7 @@ conda env create -f ray.yml
 ```
 
 ## Architecture
-![Arch](docs/rl.dist.ray.png)
+![Illustration of distributed architecture.](docs/rl.dist.ray.png)
 
 ## Training
 ```bash
@@ -25,7 +25,8 @@ conda env create -f ray.yml
 ```
 
 ## Custom usage
-- Custom environment. `./envs/custom_env.py`
+- Custom environment. Modify `./envs/custom_env.py`
+
 ```python
 @register_env('custom_env')
 @ray.remote
@@ -46,7 +47,8 @@ class CustomEnvWrapper(object):
         # 3. return OBSERVATION(...)
 ```
 
-- Custom models. `models/custom_model.py`
+- Custom models. Modify `models/custom_model.py`
+
 ```python
 @register_model('custom_model')
 class CustomModel(object):
@@ -75,7 +77,8 @@ class CustomModel(object):
         ...
 ```
 
-- Custom agents.
+- Custom agents. Modify `agents/custom_agent.py`
+
 ```python
 @register_agent("custom_agent")
 class DefaultAgent(object):
@@ -83,7 +86,7 @@ class DefaultAgent(object):
         self.model = model
         self.trajectories = []
         ...
-    
+
     @staticmethod
     def add_args(parser):
         """ Add custom arguments here """
@@ -100,7 +103,6 @@ class DefaultAgent(object):
     def fetch_grads(self, weights):
         """ Compute gradients """
         ...
-    
 ```
 
 - Custom arguments.
